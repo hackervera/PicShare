@@ -21,14 +21,24 @@ var config = JSON.parse(fs.readFileSync(configFile,'utf8'));
 var replicate = function(){
 
 	var createDatabase = function(i){
+	
+	    var jsonBody = {
+			source:  "http://"+config.i2pcouches[i].source+"/"+config.i2pcouches[i].db, 
+			target: config.i2pcouches[i].name,
+			continuous: true,
+			proxy: "http://"+config.proxy
+		};
+		if(!/i2p/.test(config.i2pcouches[i].source)){
+		    delete jsonBody.proxy;
+		}
+		
 		request.put({
 			uri: "http://"+config.couchauth+"@localhost:5984/"+config.i2pcouches[i].name
 		}, function(err, res, body){
 			console.log(body);
 			
 			request.post({
-				uri:"http://"+config.i2pcouches[i].source+"/_replicate", 
-				proxy: "http://"+config.proxy,
+				uri:"http://"+config.couchauth+"@localhost:5984/_replicate", 
 				json: jsonBody
 	
 			}, function(err, res, body){
@@ -45,11 +55,7 @@ var replicate = function(){
 	}
 	for(var i=0; i < config.i2pcouches.length; i++){
 		console.log("attempting replication");
-		var jsonBody = {
-			source: config.i2pcouches[i].db, 
-			target: "http://"+config.couchauth+"@localhost:5984/"+config.i2pcouches[i].name,
-			continuous: true
-		};
+
 
 		createDatabase(i);
 	}
@@ -106,13 +112,13 @@ var magic = function(photos){
 		
 		if(options.action == "add"){
 			request.put({
-				uri: "http://"+config.couchauth+"@localhost:5984/shared"
+				uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared
 			}, function(err, res, body){ 
 				console.log(body)
 				
 				request.put({
 					body: JSON.stringify(photos[options.id]),
-					uri: "http://"+config.couchauth+"@localhost:5984/shared/"+photos[options.id].id
+					uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
 				}, function(err, res, body){
 					console.log(body);
 				});
@@ -124,12 +130,12 @@ var magic = function(photos){
 			photos[options.id]._attachments[photos[options.id].id+".jpg"].data = file;
 		} else {
 			request.get({
-				uri:"http://"+config.couchauth+"@localhost:5984/shared/"+photos[options.id].id
+				uri:"http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
 			}, function(err, res, body){
 					console.log(JSON.parse(body)._rev);
 					var rev = JSON.parse(body)._rev;
 					request.del({
-						uri: "http://"+config.couchauth+"@localhost:5984/shared/"+
+						uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+
 							photos[options.id].id+"?rev="+rev
 					}, function(err, res, body){
 							console.log(body);

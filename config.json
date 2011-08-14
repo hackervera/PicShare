@@ -1,10 +1,19 @@
 {
-
+    
     "proxy": "pdxbrain.com:4444",
+    "shared": "shared",
     "i2pcouches": [{
         "name":"dude",
         "source":"tc3tunegsmlicdp33kv5mkwyv723ya4kmctpj3yxf2ithb3bmtta.b32.i2p",
         "db":"shared"
+    },{
+        "name": "pdx",
+        "source":"2eys7k2jt6riailn57h57eufzlxcbu55yq4m42vhonnlhgikmswq.b32.i2p",
+        "db":"mail_e5e6456456"
+    },{
+        "name":"pdxnorm",
+        "source":"pdxbrain.com:5984",
+        "db":"mail_e5e6456456"
     }],
     "couchauth": "tyler:tyler"
 
