@@ -10,14 +10,13 @@
 <script src="jquery.js"></script>
 
 
-<h1>Pictures:</h1>
 <% for(i=0;i < files.length;i++){ 
 	var filePath = "thumbs/" + files[i].id + ".jpg";
 	var originalPath = "originals/" + files[i].id + ".jpg";
 	var id = i;
 %>
 	<span>
-	<a href="<%= originalPath %>"><img src="<%= filePath %>" ></a>
+	<a href="<%= originalPath %>" target="_blank"><img src="<%= filePath %>" ></a>
 	<p>Share image? <input type="checkbox" class="check" id="<%= id %>" <% if(files[id].shared){ %> checked="checked" <% } %>></p>
 	</span>
 
@@ -40,7 +39,7 @@
 			console.log(id + " not checked");
 			shared = undefined;
 		}
-		$.post("/", {shared: shared, id: id});
+		$.post("/Me/picshare", {shared: shared, id: id});
 	});
 
 

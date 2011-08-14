@@ -15,6 +15,7 @@ app.get("/jquery.js", function(req, res){
 	res.send(fs.readFileSync('../../Ops/Dashboard/static/js/jquery-1.6.1.min.js','utf8'));
 });
 
+
 var config = JSON.parse(fs.readFileSync(configFile,'utf8'));
 
 var replicate = function(){
@@ -54,13 +55,15 @@ var replicate = function(){
 	
 }
 
-//replicate();
+replicate();
 
 var magic = function(photos){
 	app.get('/', function(req, res) {
 		console.log(photos);
 		res.render('index', {files: photos});
 	});
+	
+
 	
 	var selectedPhotos = function(){
 		var selected = [];
@@ -86,38 +89,60 @@ var magic = function(photos){
 		
 	}
 	
-	var couchPost = function(){
-		var selected = selectedPhotos();
-		var requests = function(i){
+	var couchPost = function(options){
+
+		var file = fs.readFileSync('../../Me/flickr/originals/'+photos[options.id].id+".jpg", 'base64');
+		
+		if(options.action == "add"){
 			request.put({
 				uri: "http://"+config.couchauth+"@localhost:5984/shared"
 			}, function(err, res, body){ 
-				//console.log(body)
+				console.log(body)
 				
 				request.put({
-					body: JSON.stringify(selected[i]),
-					uri: "http://"+config.couchauth+"@localhost:5984/shared/"+selected[i].id
+					body: JSON.stringify(photos[options.id]),
+					uri: "http://"+config.couchauth+"@localhost:5984/shared/"+photos[options.id].id
 				}, function(err, res, body){
-					//console.log(body);
+					console.log(body);
 				});
 			});
 		
-		}
-		for(var i=0;i < selected.length; i++){
-			var file = fs.readFileSync('public/originals/'+selected[i].id+".jpg", 'base64');
+			photos[options.id]._attachments = {};
+			photos[options.id]._attachments[photos[options.id].id+".jpg"]= {};
+			photos[options.id]._attachments[photos[options.id].id+".jpg"].content_type = "image/jpeg";
+			photos[options.id]._attachments[photos[options.id].id+".jpg"].data = file;
+		} else {
+			request.get({
+				uri:"http://"+config.couchauth+"@localhost:5984/shared/"+photos[options.id].id
+			}, function(err, res, body){
+					console.log(JSON.parse(body)._rev);
+					var rev = JSON.parse(body)._rev;
+					request.del({
+						uri: "http://"+config.couchauth+"@localhost:5984/shared/"+
+							photos[options.id].id+"?rev="+rev
+					}, function(err, res, body){
+							console.log(body);
+					});
+			
+			});
 
-			selected[i]._attachments = {};
-			selected[i]._attachments[selected[i].id+".jpg"]= {};
-			selected[i]._attachments[selected[i].id+".jpg"].content_type = "image/jpeg";
-			selected[i]._attachments[selected[i].id+".jpg"].data = file;
-			requests(i);
-	
 		}
+		
+
 	}
 	
-	//couchPost();
 	
 	
+	app.post("/", function(req, res){
+		if(req.body.shared){
+			photos[req.body.id].shared = "true";
+			couchPost({id: req.body.id, action: "add"});
+		} else {
+			photos[req.body.id].shared = undefined;
+			couchPost({id: req.body.id, action: "delete"});
+		}
+		lfs.writeObjectsToFile(photosFile, photos);
+	});
 	
 	
 };
