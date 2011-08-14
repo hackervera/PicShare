@@ -1,13 +1,19 @@
 var lfs = require('../../Common/node/lfs.js');
 var photosFile = "../../Me/flickr/photos.json";
-var configFile = "../../config.json"
+var configFile = "config.json"
 
-
-
-var express = require("express");
-var app = express.createServer();
+var express = require('express'),connect = require('connect');
+var app = express.createServer(connect.bodyParser(), connect.cookieParser(), connect.session({secret : "locker"}));
+app.register('.html', require('ejs'));
+app.set('views', __dirname + '/views');
+app.set('view engine', 'html');
+app.use(express.static('../../Me/flickr/'));
 var request = require("request");
 var fs = require("fs");
+
+app.get("/jquery.js", function(req, res){
+	res.send(fs.readFileSync('../../Ops/Dashboard/static/js/jquery-1.6.1.min.js','utf8'));
+});
 
 var config = JSON.parse(fs.readFileSync(configFile,'utf8'));
 
@@ -48,9 +54,14 @@ var replicate = function(){
 	
 }
 
-replicate();
+//replicate();
 
 var magic = function(photos){
+	app.get('/', function(req, res) {
+		console.log(photos);
+		res.render('index', {files: photos});
+	});
+	
 	var selectedPhotos = function(){
 		var selected = [];
 		for(var i=0;i < photos.length; i++){
@@ -104,10 +115,7 @@ var magic = function(photos){
 		}
 	}
 	
-	app.get("/", function(req, res){
-		res.send(JSON.stringify(selectedPhotos()));
-	});
-	couchPost();
+	//couchPost();
 	
 	
 	
@@ -115,8 +123,23 @@ var magic = function(photos){
 };
 
 
-lfs.readObjectsFromFile(photosFile, function(photos){ 
-	magic(photos);
-});
+var loadPhotos = function(){
+	lfs.readObjectsFromFile(photosFile, function(photos){ 
+		magic(photos);
+	});
+}
 
-app.listen(4545);
+loadPhotos();
+
+
+
+
+var stdin = process.openStdin();
+stdin.setEncoding('utf8');
+stdin.on('data', function (chunk) {
+    var processInfo = JSON.parse(chunk);
+    process.chdir(processInfo.workingDirectory);
+    app.listen(processInfo.port);
+    var returnedInfo = {};
+    console.log(JSON.stringify(returnedInfo));
+});
