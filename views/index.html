@@ -1,0 +1,43 @@
+<style>
+span {
+	float: left;
+	margin-right: 10px;
+}
+<% 
+
+if(shared){ %>
+p {
+	display: none;
+}
+<% } %>
+</style>
+<script src="/jquery.js"></script>
+<% for(i=0;i < files.length;i++){ 
+	var filePath = "/thumbs/" + files[i].id + ".jpg";
+	var originalPath = "/originals/" + files[i].id + ".jpg";
+	var id = i;
+%>
+<span>
+<a href="<%= originalPath %>"><img src="<%= filePath %>" ></a>
+<p>Share image? <input type="checkbox" class="check" id="<%= id %>" <% if(files[id].shared){ %> checked="checked" <% } %>></p>
+</span>
+
+<% } %>
+
+
+<script>
+var shared;
+$(".check").click(function(){
+	var id = $(this).attr("id");
+	
+	if($(this).attr('checked')){
+		console.log(id + " checked");
+		shared = true;
+	} else {
+		console.log(id + " not checked");
+		shared = undefined;
+	}
+	$.post("/", {shared: shared, id: id});
+});
+
+</script>
