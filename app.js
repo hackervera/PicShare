@@ -16,7 +16,34 @@ app.get("/jquery.js", function(req, res){
 });
 
 
-var config = JSON.parse(fs.readFileSync(configFile,'utf8'));
+app.post("/setup", function(req, res){
+    var config;
+    var proxy;
+    if(req.body.proxy){
+        proxy = req.body.proxy;
+    } else {
+        proxy = "pdxbrain.com:4444"
+    }
+    config = {
+        couchauth: req.body.username+":"+req.body.password,
+        proxy: proxy,
+        i2pcouches: [{
+            "name":"tyler",
+            "source":"tc3tunegsmlicdp33kv5mkwyv723ya4kmctpj3yxf2ithb3bmtta.b32.i2p",
+            "db":"shared"
+        }],
+        shared: "shared"
+    };
+
+    fs.writeFileSync("config.json", JSON.stringify(config));
+    
+    res.redirect("/Me/picshare/");
+    
+});
+
+var config;
+
+
 
 var replicate = function(){
 
@@ -64,18 +91,8 @@ var replicate = function(){
 
 var files;
 
-app.get('/', function(req, res) {
-	//console.log(photos);
-	if(files){
-		res.render('index', {files: files});
-	} else {
-		setTimeout(function(){
-			res.render('index', {files: files});
-		}, 2000);
-	}
-	
-	
-});
+
+
 
 var magic = function(photos){
 	files = photos;
@@ -107,8 +124,14 @@ var magic = function(photos){
 	}
 	
 	var couchPost = function(options){
-
-		var file = fs.readFileSync('../../Me/flickr/originals/'+photos[options.id].id+".jpg", 'base64');
+        var dbphoto = Object.create(photos[options.id]);
+		var file = fs.readFileSync('../../Me/flickr/originals/'+dbphoto.id+".jpg", 'base64');
+		
+		
+        dbphoto._attachments = {};
+        dbphoto._attachments[dbphoto.id+".jpg"]= {};
+        dbphoto._attachments[dbphoto.id+".jpg"].content_type = "image/jpeg";
+        dbphoto._attachments[dbphoto.id+".jpg"].data = file;
 		
 		if(options.action == "add"){
 			request.put({
@@ -117,17 +140,14 @@ var magic = function(photos){
 				console.log(body)
 				
 				request.put({
-					body: JSON.stringify(photos[options.id]),
+					body: JSON.stringify(dbphoto),
 					uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
 				}, function(err, res, body){
 					console.log(body);
 				});
 			});
 		
-			photos[options.id]._attachments = {};
-			photos[options.id]._attachments[photos[options.id].id+".jpg"]= {};
-			photos[options.id]._attachments[photos[options.id].id+".jpg"].content_type = "image/jpeg";
-			photos[options.id]._attachments[photos[options.id].id+".jpg"].data = file;
+
 		} else {
 			request.get({
 				uri:"http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
@@ -161,7 +181,7 @@ var magic = function(photos){
 		lfs.writeObjectsToFile(photosFile, photos);
 	});
 	
-	setTimeout(replicate, 3000);
+	
 };
 
 
@@ -171,7 +191,7 @@ var loadPhotos = function(){
 	});
 }
 
-loadPhotos();
+
 
 
 
@@ -184,4 +204,35 @@ stdin.on('data', function (chunk) {
     app.listen(processInfo.port);
     var returnedInfo = {};
     console.log(JSON.stringify(returnedInfo));
+    
+    try {
+        config = JSON.parse(fs.readFileSync(configFile,'utf8'));
+    } catch(e){
+        config;
+    }
+    
+    app.get('/', function(req, res) {
+    
+        if(config){
+            setTimeout(replicate, 3000);
+            //console.log(photos);
+            if(files){
+                res.render('index', {files: files});
+            } 
+            
+            else {
+                setTimeout(function(){
+                    res.render('index', {files: files});
+                }, 2000);
+            }
+        } 
+        
+        else {
+            res.render('firstrun', {layout: false});
+        }
+    });
+    
+    
+
+    loadPhotos();
 });

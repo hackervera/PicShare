@@ -1,0 +1,20 @@
+<style>
+body {
+    font-family: Helvetica, Arial;
+}
+a {
+    font-size: larger;
+}
+</style>
+<a href="http://www.couchbase.com/downloads" target="_blank">This app requires couchdb to function correctly.</a><br><br>
+Please be sure that its installed before attempting to use this app.<br>
+To setup your couchdb username and password visit <a href="http://localhost:5984/_utils" target="_blank">here</a> and look in the bottom right corner.<br><br>
+This is your first run of this app, you need to do some configuring!<br><br>
+
+<form method="POST" action="setup">
+What is your couchdb username: <input type="text" name="username"><br>
+What is your couchdb password: <input type="text" name="password"><br>
+Custom i2p proxy: (leave blank if unknown) <input type="text" name="proxy"><br><br>
+<input type="submit" value="Save">
+
+</form>
