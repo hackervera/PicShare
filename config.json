@@ -1,0 +1,24 @@
+{
+    "lockerHost" : "localhost",
+    "lockerPort" : 8042,
+    "logFile": null,
+    "proxy": "pdxbrain.com:4444",
+    "i2pcouches": [{
+    	"name":"dude",
+    	"source":"tc3tunegsmlicdp33kv5mkwyv723ya4kmctpj3yxf2ithb3bmtta.b32.i2p",
+    	"db":"shared"
+    }],
+    "couchauth": "tyler:tyler",
+    "me" : "Me",
+    "scannedDirs" : [
+        "Apps", 
+        "Collections", 
+        "Connectors"
+        ],
+    "displayUnstable" : true,
+    "mongo" : {
+        "dataDir": "mongodata",
+        "host": "localhost",
+        "port": 27018
+    }
+}
