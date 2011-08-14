@@ -47,7 +47,8 @@ var replicate = function(){
 		console.log("attempting replication");
 		var jsonBody = {
 			source: config.i2pcouches[i].db, 
-			target: "http://"+config.couchauth+"@localhost:5984/"+config.i2pcouches[i].name	
+			target: "http://"+config.couchauth+"@localhost:5984/"+config.i2pcouches[i].name,
+			continuous: true
 		};
 
 		createDatabase(i);
@@ -55,13 +56,23 @@ var replicate = function(){
 	
 }
 
-replicate();
+var files;
+
+app.get('/', function(req, res) {
+	//console.log(photos);
+	if(files){
+		res.render('index', {files: files});
+	} else {
+		setTimeout(function(){
+			res.render('index', {files: files});
+		}, 2000);
+	}
+	
+	
+});
 
 var magic = function(photos){
-	app.get('/', function(req, res) {
-		console.log(photos);
-		res.render('index', {files: photos});
-	});
+	files = photos;
 	
 
 	
@@ -144,7 +155,7 @@ var magic = function(photos){
 		lfs.writeObjectsToFile(photosFile, photos);
 	});
 	
-	
+	setTimeout(replicate, 3000);
 };
 
 
