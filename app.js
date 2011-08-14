@@ -15,6 +15,23 @@ app.get("/jquery.js", function(req, res){
 	res.send(fs.readFileSync('../../Ops/Dashboard/static/js/jquery-1.6.1.min.js','utf8'));
 });
 
+app.get("/showpics/:username", function(req, res){
+    request.get({
+        uri: "http://localhost:5984/"+req.params.username+"/_all_docs"
+    }, function(){
+        console.log(arguments[2]);
+        var docs = JSON.parse(arguments[2]);
+        console.log(docs);
+        res.render('friends', {
+            docs: docs.rows, 
+            friends: config.i2pcouches, 
+            username: req.params.username
+        });
+
+    });
+});
+
+
 
 app.post("/setup", function(req, res){
     var config;
@@ -125,13 +142,21 @@ var magic = function(photos){
 	
 	var couchPost = function(options){
         var dbphoto = Object.create(photos[options.id]);
-		var file = fs.readFileSync('../../Me/flickr/originals/'+dbphoto.id+".jpg", 'base64');
+		var original = fs.readFileSync('../../Me/flickr/originals/'+dbphoto.id+".jpg", 'base64');
+		var thumb = fs.readFileSync('../../Me/flickr/thumbs/'+dbphoto.id+".jpg", 'base64');
 		
 		
-        dbphoto._attachments = {};
-        dbphoto._attachments[dbphoto.id+".jpg"]= {};
-        dbphoto._attachments[dbphoto.id+".jpg"].content_type = "image/jpeg";
-        dbphoto._attachments[dbphoto.id+".jpg"].data = file;
+        dbphoto._attachments = {
+            "original.jpg": {
+                content_type: "image/jpeg",
+                data: original
+            },
+            "thumb.jpg": {
+                content_type: "image/jpeg",
+                data: thumb
+            }
+        };
+
 		
 		if(options.action == "add"){
 			request.put({
@@ -212,24 +237,29 @@ stdin.on('data', function (chunk) {
     }
     
     app.get('/', function(req, res) {
+         
     
         if(config){
             setTimeout(replicate, 3000);
             //console.log(photos);
             if(files){
-                res.render('index', {files: files});
+                res.render('index', {files: files, friends: config.i2pcouches});
             } 
             
             else {
                 setTimeout(function(){
-                    res.render('index', {files: files});
+                    res.render('index', {files: files, friends: config.i2pcouches});
                 }, 2000);
             }
+            request.put({
+				uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared
+			});
         } 
         
         else {
             res.render('firstrun', {layout: false});
         }
+        
     });
     
     

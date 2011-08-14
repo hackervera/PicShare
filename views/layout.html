@@ -1,4 +1,15 @@
+<% 
+    var names = function(){
+        for(var i=0; i < friends.length; i++){
+%>
+<a href="/Me/picshare/showpics/<%= friends[i].name %>"><%= friends[i].name %>'s Pictures</a> 
+<%
+        }
+    }
+%>
+
 <div><h2>
-<a href="http://localhost:5984/_utils/database.html?shared" target="_blank">View pics in couchdb</a>
+<a href="/Me/picshare/">Edit Shared</a> 
+<a href="http://localhost:5984/_utils/database.html?shared" target="_blank">View pics in couchdb</a>  <% names() %>
 </h2></div>
 <%- body %>
