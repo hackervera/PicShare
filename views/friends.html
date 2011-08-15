@@ -4,6 +4,6 @@ for(var i=0;i < docs.length; i++){
     
 %>
 
-<img src="http://localhost:5984/<%= username %>/<%= docs[i].id %>/thumb.jpg">
+<a href="http://localhost:5984/<%= username %>/<%= docs[i].id %>/original.jpg" target="_blank"><img src="http://localhost:5984/<%= username %>/<%= docs[i].id %>/thumb.jpg"></a>
 
 <% } %>
