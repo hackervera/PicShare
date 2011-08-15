@@ -1,19 +1,18 @@
 var lfs = require('../../Common/node/lfs.js');
-var photosFile = "../../Me/flickr/photos.json";
+var photosFile = "photos.json";
 var configFile = "config.json"
+
+
 
 var express = require('express'),connect = require('connect');
 var app = express.createServer(connect.bodyParser(), connect.cookieParser(), connect.session({secret : "locker"}));
 app.register('.html', require('ejs'));
 app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
-app.use(express.static('../../Me/flickr/'));
+app.use(express.static('../../Me/'));
 var request = require("request");
 var fs = require("fs");
 
-app.get("/jquery.js", function(req, res){
-	res.send(fs.readFileSync('../../Ops/Dashboard/static/js/jquery-1.6.1.min.js','utf8'));
-});
 
 app.get("/showpics/:username", function(req, res){
     request.get({
@@ -114,8 +113,6 @@ var files;
 var magic = function(photos){
 	files = photos;
 	
-
-	
 	var selectedPhotos = function(){
 		var selected = [];
 		for(var i=0;i < photos.length; i++){
@@ -141,9 +138,17 @@ var magic = function(photos){
 	}
 	
 	var couchPost = function(options){
-        var dbphoto = Object.create(photos[options.id]);
-		var original = fs.readFileSync('../../Me/flickr/originals/'+dbphoto.id+".jpg", 'base64');
-		var thumb = fs.readFileSync('../../Me/flickr/thumbs/'+dbphoto.id+".jpg", 'base64');
+	    var byId = function(element, index, array){
+	        //console.log(element.id);
+	        return (element.id == options.id);
+	    }
+	    //console.log(photos);
+	    //console.log(options.id);
+        var dbphoto = photos.filter(byId)[0];
+        console.log(dbphoto.sources);
+        console.log(process.cwd());
+		var original = fs.readFileSync('../'+dbphoto.sources[0].service+'/originals/'+dbphoto.sources[0].id+".jpg", 'base64');
+		var thumb = fs.readFileSync('../'+dbphoto.sources[0].service+'/thumbs/'+dbphoto.sources[0].id+".jpg", 'base64');
 		
 		
         dbphoto._attachments = {
@@ -166,7 +171,7 @@ var magic = function(photos){
 				
 				request.put({
 					body: JSON.stringify(dbphoto),
-					uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
+					uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+dbphoto.sources[0].id
 				}, function(err, res, body){
 					console.log(body);
 				});
@@ -175,13 +180,13 @@ var magic = function(photos){
 
 		} else {
 			request.get({
-				uri:"http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+photos[options.id].id
+				uri:"http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+dbphoto.sources[0].id
 			}, function(err, res, body){
 					console.log(JSON.parse(body)._rev);
 					var rev = JSON.parse(body)._rev;
 					request.del({
 						uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared+"/"+
-							photos[options.id].id+"?rev="+rev
+							dbphoto.sources[0].id+"?rev="+rev
 					}, function(err, res, body){
 							console.log(body);
 					});
@@ -196,14 +201,25 @@ var magic = function(photos){
 	
 	
 	app.post("/", function(req, res){
-		if(req.body.shared){
-			photos[req.body.id].shared = "true";
-			couchPost({id: req.body.id, action: "add"});
-		} else {
-			photos[req.body.id].shared = undefined;
-			couchPost({id: req.body.id, action: "delete"});
-		}
-		lfs.writeObjectsToFile(photosFile, photos);
+		lfs.readObjectsFromFile(photosFile, function(shared){
+            
+            if(req.body.shared){
+                couchPost({id: req.body.id, action: "add"});
+                shared.push(req.body.id);
+            } 
+            
+            else {
+                couchPost({id: req.body.id, action: "delete"});
+                shared = shared.filter(function(element, index, array){
+                    return element != req.body.id
+                });
+            }
+            console.log("Shared: "+shared);
+            if(shared.length < 1){
+                shared = [""];
+            }
+            lfs.writeObjectsToFile(photosFile, shared);
+        });
 	});
 	
 	
@@ -211,9 +227,14 @@ var magic = function(photos){
 
 
 var loadPhotos = function(){
-	lfs.readObjectsFromFile(photosFile, function(photos){ 
-		magic(photos);
+	
+	return request.get({
+	    uri: "http://localhost:8042/Me/photos/allPhotos"
+	}, function(){
+	    magic(JSON.parse(arguments[2]));
 	});
+	
+
 }
 
 
@@ -242,15 +263,29 @@ stdin.on('data', function (chunk) {
         if(config){
             setTimeout(replicate, 3000);
             //console.log(photos);
+            
+            var indexRender = function(){
+                lfs.readObjectsFromFile(photosFile, function(shared){
+                    res.render('index', {
+                        files: files, 
+                        friends: config.i2pcouches, 
+                        fs: fs,
+                        shared: shared
+                    });
+                });
+                
+            }
+            
             if(files){
-                res.render('index', {files: files, friends: config.i2pcouches});
+                indexRender();
             } 
             
             else {
                 setTimeout(function(){
-                    res.render('index', {files: files, friends: config.i2pcouches});
+                    indexRender();
                 }, 2000);
             }
+            
             request.put({
 				uri: "http://"+config.couchauth+"@localhost:5984/"+config.shared
 			});

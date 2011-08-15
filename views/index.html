@@ -7,17 +7,32 @@
 </style>
 
 
-<script src="jquery.js"></script>
+<script src="/static/js/jquery-1.6.1.min.js"></script>
 
 
 <% for(i=0;i < files.length;i++){ 
-	var filePath = "thumbs/" + files[i].id + ".jpg";
-	var originalPath = "originals/" + files[i].id + ".jpg";
-	var id = i;
+    console.log(files[i]);
+    console.log(process.cwd());
+	var filePath = files[i].sources[0].service+"/thumbs/" + files[i].sources[0].id + ".jpg";
+	var originalPath = files[i].sources[0].service+"/originals/" + files[i].sources[0].id + ".jpg";
+	
+	
+		var findKey = function(){
+	    return shared.filter(function(element, index, array){
+            //console.log("ELEMENT ID: "+element);
+            return element == files[i].id
+        });
+    }
+
 %>
 	<span>
 	<a href="<%= originalPath %>" target="_blank"><img src="<%= filePath %>" ></a>
-	<p>Share image? <input type="checkbox" class="check" id="<%= id %>" <% if(files[id].shared){ %> checked="checked" <% } %>></p>
+	<p>Share image? <input type="checkbox" class="check" id="<%= files[i].id %>"
+	<% if(findKey().length > 0){ %> checked="checked" <% } %> > 
+
+    
+    
+</p>
 	</span>
 
 <% } %>
